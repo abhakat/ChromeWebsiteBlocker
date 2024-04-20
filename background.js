@@ -113,3 +113,4 @@ function isSiteBlocked(hostname) {
     alert("Blocked sites: " + blockedSitesString);  // Di
     return blockedSites.includes(hostname);
 }
+
