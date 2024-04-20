@@ -1,0 +1,28 @@
+<!-- popup.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Popup</title>
+  <link rel="stylesheet" href="popup.css"> <!-- Link to external CSS for styling -->
+  <script src="popup.js"></script> <!-- Include JavaScript functions from external file -->
+</head>
+<body>
+  <h1>Site Blocker!</h1>
+  <!-- Indicator for shutdown status -->
+  <h2>Shutdown Blocked Sites Status</h2>
+  <p id="shutdownStatus">Loading...</p> <!-- Indicator for shutdownBlockedSites -->
+
+  <!-- User input for adding a new blocked site -->
+  <h2>Enter your input</h2>
+  <input type="text" id="inputBar" placeholder="Type something here..." />
+  <button id="saveButton">Save Input</button>
+
+  <!-- Section for displaying blocked sites with checkboxes -->
+  <h2>Blocked Sites</h2>
+  <ul id="blockedSitesList"></ul> <!-- The list that will be populated with blocked sites -->
+
+  <!-- Button to trigger deletion of selected sites -->
+  <button id="deleteButton">Delete Selected Sites</button>
+</body>
+</html>

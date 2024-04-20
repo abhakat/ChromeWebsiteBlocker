@@ -1,0 +1,29 @@
+body {
+    font-family: Arial, sans-serif;
+  }
+  
+  h1 {
+    color: #333;
+  }
+  
+  button {
+    padding: 10px 20px;
+    background-color: #28a745;
+    color: white;
+    border: none;
+    border-radius: 5px;
+  }
+  
+  button:hover {
+    background-color: #218838;
+  }
+  /* Ensures checkboxes stay on the same line as text */
+ul#blockedSitesList {
+    list-style-type: none; /* Removes default bullet points */
+    padding-left: 0; /* Aligns checkboxes properly */
+  }
+  
+  ul#blockedSitesList li {
+    display: inline-block; /* Ensures elements stay on the same line */
+    margin-bottom: 5px; /* Adds a bit of spacing for clarity */
+  }
