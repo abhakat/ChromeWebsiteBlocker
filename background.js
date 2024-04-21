@@ -15,41 +15,37 @@ let blockedSites = [
 
 
 
-// Store the initial list of blocked sites in Chrome's local storage
+// After adding a blocked site, ensure that `blockedSites` is updated with the new list
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.action === "addBlockedSite") {
-      const newSite = message.site;
-  
-      // Get current list of blocked sites
-      chrome.storage.local.get(["blockedSites"], (result) => {
-        let blockedSites = result.blockedSites || [];
-  
-        if (!blockedSites.includes(newSite)) {
-          blockedSites.push(newSite);
-          console.log("HI HI HI HI");
-  
-          // Update the list in Chrome's local storage
-          chrome.storage.local.set({ blockedSites }, () => {
-            console.log("added blocked site")
-            sendResponse({ success: true });
-            const blockedSitesString = blockedSites.join(", ");  // Join the sites with commas
-            console.log("Blocked sites: " + blockedSitesString);  // Di
+        const newSite = message.site;
 
-          });
-        } else {
-          sendResponse({ success: false, error: "Site already blocked" });
-        }
-      });
-  
-      // Indicate that the response is asynchronous
-      return true;
+        chrome.storage.local.get(["blockedSites"], (result) => {
+            let blockedSites = result.blockedSites || [];
+
+            if (!blockedSites.includes(newSite)) {
+                blockedSites.push(newSite);
+
+                chrome.storage.local.set({ blockedSites }, () => {
+                    sendResponse({ success: true });
+                    console.log("Blocked sites: " + blockedSites.join(", ")); // Log updated blocked sites
+                    let newBlockedSites = blockedSites;
+                    blockedSites = newBlockedSites;
+                });
+            } else {
+                sendResponse({ success: false, error: "Site already blocked" });
+            }
+        });
+
+        return true; // Indicate asynchronous response
     }
-  });
+});
 
 
-function getBlockedSites(callback) {
+  function getBlockedSites(callback) {
     chrome.storage.local.get(['blockedSites'], (result) => {
         let blockedSites = result.blockedSites || []; // Default to empty array if not set
+        callback(blockedSites);
     });
 }
 
@@ -80,15 +76,27 @@ chrome.storage.local.set({'shutdown': shutdownBlockedSites}, function() {
 
 
 
-chrome.tabs.onActivated.addListener(activeInfo => {
+// Listen for when a tab becomes active
+chrome.tabs.onActivated.addListener((activeInfo) => {
+    // Fetch the latest list of blocked sites from Chrome's local storage
+    chrome.storage.local.get(['blockedSites'], (result) => {
+        // Use the retrieved blocked sites list
+        let blockedSites = result.blockedSites || [];  // Default to empty array if not set
+        
+        // Join the blocked sites with commas for logging/debugging
+        const blockedSitesString = blockedSites.join(", ");
+        console.log("Blocked sites: " + blockedSitesString);
+        
+        // Store the current active tab ID
+        currentTabId = activeInfo.tabId;
 
-    const blockedSitesString = blockedSites.join(", ");  // Join the sites with commas
-    console.log("Blocked sites: " + blockedSitesString);  // Di
-    currentTabId = activeInfo.tabId;
-    chrome.tabs.get(currentTabId, (tab) => {
-        updateTabTime(activeInfo.tabId, tab.url);  // Pass the current tab's URL to updateTabTime
+        // Get details of the active tab
+        chrome.tabs.get(currentTabId, (tab) => {
+            // Update the tab time with the current URL and blocked sites
+            updateTabTime(activeInfo.tabId, tab.url, blockedSites);
+        });
     });
-});
+});;
 
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
     if (tabId === currentTabId && changeInfo.url) {
@@ -97,23 +105,22 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
     }
 });
 
-function updateTabTime(tabId, newUrl = null) {
-    if (newUrl) {
-        currentUrl = newUrl; // Make sure currentUrl is updated with new URL
-    }
-    else {
-        currentUrl = "https://www.google.com/"; //else set to default of google
-    }
+// Modify updateTabTime to accept blocked sites as a parameter
+function updateTabTime(tabId, newUrl, blockedSites) {
+    let currentUrl = newUrl || "https://www.google.com/";  // Default URL if none is provided
     let url = new URL(currentUrl);
     let hostname = url.hostname;
-    let newSiteBlocked = isSiteBlocked(hostname);
+
+    // Determine if the current site is blocked
+    let newSiteBlocked = blockedSites.includes(hostname);
     let currentTime = Date.now();
 
     if (currentTabBlocked && !shutdownBlockedSites) {
-        timeSpentOnBlockedSites += currentTime - currentTabTime;  // Update time spent on blocked sites
+        // Update time spent on blocked sites if current tab is blocked
+        timeSpentOnBlockedSites += currentTime - currentTabTime;
     }
 
-    // Update the current tab time and blocked status
+    // Set the status of the current tab based on whether it's blocked
     if (newSiteBlocked) {
         currentTabTime = currentTime;
         currentTabBlocked = true;
@@ -121,27 +128,27 @@ function updateTabTime(tabId, newUrl = null) {
         currentTabTime = -1;
         currentTabBlocked = false;
     }
+
     if (shutdownBlockedSites || timeSpentOnBlockedSites > allowedBlockedTime) {
         shutdownBlockedSites = true;
-        console.log("shutdown block sites: ", shutdownBlockedSites);
-
+        console.log("Shutdown block sites: ", shutdownBlockedSites);
     }
 
-
     console.log("Time spent on blocked sites: " + timeSpentOnBlockedSites);
-    chrome.storage.local.set({'shutdown': shutdownBlockedSites}, function() {
-        console.log("Shutdown is set to in storage. : " + shutdownBlockedSites);
+
+    // Update local storage with the current shutdown state
+    chrome.storage.local.set({'shutdown': shutdownBlockedSites}, () => {
+        console.log("Shutdown is set in storage. : " + shutdownBlockedSites);
     });
 }
 
 
 
-function isSiteBlocked(hostname) {
-    getBlockedSites();
+
+function isSiteBlocked(hostname, callback) {
+    getBlockedSites((blockedSites) => {
+        callback(blockedSites.includes(hostname));
+    });
     console.log("IN THIS BITCH");
     console.log("Blocked sites: ", blockedSites)
-    const blockedSitesString = blockedSites.join(", ");  // Join the sites with commas
-    console.log("Blocked sites: " + blockedSitesString);  // Di
-    return blockedSites.includes(hostname);
 }
-

@@ -1,5 +1,5 @@
 //popup.js
-getBlockedSites(callback);
+
 // Define function to get blocked sites
 function getBlockedSites(callback) {
     chrome.storage.local.get(['blockedSites'], (result) => {
@@ -8,10 +8,6 @@ function getBlockedSites(callback) {
     });
 }
 
-// Using the getBlockedSites function
-getBlockedSites((blockedSites) => {
-    console.log("Blocked sites:", blockedSites); // Handle the retrieved data
-});
 
 function renderBlockedSites() {
     const blockedSitesList = document.getElementById("blockedSitesList");
