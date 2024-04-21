@@ -1,5 +1,8 @@
 //background.js
 // Define initial blocked sites
+
+
+
 let blockedSites = [
     'www.youtube.com',
     'www.facebook.com',
@@ -13,9 +16,36 @@ let blockedSites = [
 
 
 // Store the initial list of blocked sites in Chrome's local storage
-chrome.storage.local.set({ 'blockedSites': blockedSites }, () => {
-    console.log("Blocked sites initialized.");
-});
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    if (message.action === "addBlockedSite") {
+      const newSite = message.site;
+  
+      // Get current list of blocked sites
+      chrome.storage.local.get(["blockedSites"], (result) => {
+        let blockedSites = result.blockedSites || [];
+  
+        if (!blockedSites.includes(newSite)) {
+          blockedSites.push(newSite);
+          console.log("HI HI HI HI");
+  
+          // Update the list in Chrome's local storage
+          chrome.storage.local.set({ blockedSites }, () => {
+            console.log("added blocked site")
+            sendResponse({ success: true });
+            const blockedSitesString = blockedSites.join(", ");  // Join the sites with commas
+            console.log("Blocked sites: " + blockedSitesString);  // Di
+
+          });
+        } else {
+          sendResponse({ success: false, error: "Site already blocked" });
+        }
+      });
+  
+      // Indicate that the response is asynchronous
+      return true;
+    }
+  });
+
 
 function getBlockedSites(callback) {
     chrome.storage.local.get(['blockedSites'], (result) => {
@@ -51,8 +81,9 @@ chrome.storage.local.set({'shutdown': shutdownBlockedSites}, function() {
 
 
 chrome.tabs.onActivated.addListener(activeInfo => {
-    
-    
+
+    const blockedSitesString = blockedSites.join(", ");  // Join the sites with commas
+    console.log("Blocked sites: " + blockedSitesString);  // Di
     currentTabId = activeInfo.tabId;
     chrome.tabs.get(currentTabId, (tab) => {
         updateTabTime(activeInfo.tabId, tab.url);  // Pass the current tab's URL to updateTabTime
@@ -107,10 +138,10 @@ function updateTabTime(tabId, newUrl = null) {
 
 function isSiteBlocked(hostname) {
     getBlockedSites();
-    alert("IN THIS BITCH");
+    console.log("IN THIS BITCH");
     console.log("Blocked sites: ", blockedSites)
     const blockedSitesString = blockedSites.join(", ");  // Join the sites with commas
-    alert("Blocked sites: " + blockedSitesString);  // Di
+    console.log("Blocked sites: " + blockedSitesString);  // Di
     return blockedSites.includes(hostname);
 }
 

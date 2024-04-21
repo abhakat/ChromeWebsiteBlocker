@@ -1,15 +1,5 @@
 //popup.js
-
-let blockedSites = [
-    'www.youtube.com',
-    'www.facebook.com',
-    'www.netflix.com',
-    'www.roblox.com',
-    'discord.com',
-    'www.spotify.com',
-    'twitter.com'
-];
-
+getBlockedSites(callback);
 // Define function to get blocked sites
 function getBlockedSites(callback) {
     chrome.storage.local.get(['blockedSites'], (result) => {
@@ -69,28 +59,25 @@ function updateShutdownStatus() {
     });
 }
 
-// Function to save a new blocked site and update the list
 function saveInput() {
     const inputBar = document.getElementById("inputBar");
-    const inputValue = inputBar.value;
-
-    chrome.storage.local.get(['blockedSites'], (result) => {
-        let blockedSites = result.blockedSites;
-        console.log("popup.js Blocked sites: ", blockedSites);
-
-        if (!blockedSites.includes(inputValue)) {
-            blockedSites.push(inputValue);
-
-            chrome.storage.local.set({ 'blockedSites': blockedSites }, () => {
-                renderBlockedSites(); // Re-render the list after saving
-            });
-            alert("Blocked sites: ", blockedSites);
+    const newSite = inputBar.value;
+  
+    if (newSite) {
+      // Send a message to the background script to update blocked sites
+      chrome.runtime.sendMessage(
+        { action: "addBlockedSite", site: newSite },
+        (response) => {
+          if (response.success) {
+            console.log("Site added to blocked list");
+            renderBlockedSites(); // Re-render the list to show the new site
+          }
         }
-        alert("popup.js Blocked sites: ", blockedSites);
-
-        inputBar.value = ""; // Clear the input field
-    });
-}
+      );
+    }
+  
+    inputBar.value = ""; // Clear the input field
+  }
 
 // Function to delete selected sites from the blocked list
 function deleteSelectedSites() {
