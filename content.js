@@ -254,24 +254,46 @@ const generateSTYLES = () => {
      `;
   };
 
-let blockedSites = ['www.youtube.com', "www.facebook.com", "www.netflix.com", "www.roblox.com", "discord.com", "www.spotify.com", "twitter.com"]
+// Default values for blocked sites and shutdown
+let defaultBlockedSites = [
+  'www.youtube.com',
+  'www.facebook.com',
+  'www.netflix.com',
+  'www.roblox.com',
+  'discord.com',
+  'www.spotify.com',
+  'twitter.com'
+];
 let defaultShutdown = false;
 
-function isSiteBlocked(hostname) {
-    return blockedSites.includes(hostname);
+// Function to check if a site is blocked, with a callback for async retrieval
+function isSiteBlocked(hostname, callback) {
+  chrome.storage.local.get(['blockedSites'], (result) => {
+    // Retrieve the blocked sites or use default if not found
+    let blockedSites = result.blockedSites || defaultBlockedSites;
+    // Check if the hostname is in the list of blocked sites
+    const isBlocked = blockedSites.includes(hostname);
+    // Call the provided callback function with the result
+    callback(isBlocked);
+  });
 }
 
-  
-chrome.storage.local.get(['shutdown'], function(result) {
-    // alert("FAT BALLS");
-    let shutdown = result.shutdown || defaultShutdown; // Use defaultShutdown if result.shutdown is undefined
-    // Now, shutdown has the current value from storage
-    if (isSiteBlocked(window.location.hostname) && shutdown) {
-        document.head.innerHTML = generateSTYLES();
-        document.body.innerHTML = generateHTML("FUCK: " + window.location.hostname);
+// Check storage for shutdown status and use the isSiteBlocked function to determine the response
+chrome.storage.local.get(['shutdown', 'blockedSites'], function(result) {
+  let shutdown = result.shutdown || defaultShutdown; // Use defaultShutdown if result.shutdown is undefined
+  let blockedSites = result.blockedSites || defaultBlockedSites; 
+  // Check if the current site is blocked and if shutdown is true
+  isSiteBlocked(window.location.hostname, (blocked) => {
+    alert("Blocked sites: " + blockedSites.join(", "));
+    alert(window.location.hostname);
+    if ((blocked || blockedSites.includes(window.location.hostname)) && shutdown) {
+      alert("In here");
+      // Change the page content to block it
+      document.head.innerHTML = generateSTYLES();
+      document.body.innerHTML = generateHTML("Site blocked: " + window.location.hostname);
     }
+  });
 });
-
 
 // alert(window.location.hostname);
 // alert("State of in blocked sites: " + isSiteBlocked(window.location.hostname));

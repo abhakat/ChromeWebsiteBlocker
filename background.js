@@ -58,17 +58,17 @@ let currentUrl;
 
 let shutdownBlockedSites = true;
 
-chrome.action.onClicked.addListener(() => {
-    chrome.tabs.create({ url: "https://leetcode.com/" }); // External URL to open
-});
+// chrome.action.onClicked.addListener(() => {
+//     chrome.tabs.create({ url: "https://leetcode.com/" }); // External URL to open
+// });
 
-chrome.tabs.onCreated.addListener((tab) => {
-    setTimeout(() => {
-        if (tab.url === "chrome://newtab/") {
-            chrome.tabs.update(tab.id, { url: "https://leetcode.com/" });
-        }
-    }, 100);  // Delay by 100 ms to ensure override
-});
+// chrome.tabs.onCreated.addListener((tab) => {
+//     setTimeout(() => {
+//         if (tab.url === "chrome://newtab/") {
+//             chrome.tabs.update(tab.id, { url: "https://leetcode.com/" });
+//         }
+//     }, 100);  // Delay by 100 ms to ensure override
+// });
 
 chrome.storage.local.set({'shutdown': shutdownBlockedSites}, function() {
     console.log("Shutdown is set to in storage. : " + shutdownBlockedSites);
@@ -76,79 +76,90 @@ chrome.storage.local.set({'shutdown': shutdownBlockedSites}, function() {
 
 
 
-// Listen for when a tab becomes active
+// After a tab becomes active, ensure blockedSites is properly fetched
 chrome.tabs.onActivated.addListener((activeInfo) => {
-    // Fetch the latest list of blocked sites from Chrome's local storage
     chrome.storage.local.get(['blockedSites'], (result) => {
-        // Use the retrieved blocked sites list
-        let blockedSites = result.blockedSites || [];  // Default to empty array if not set
-        
-        // Join the blocked sites with commas for logging/debugging
-        const blockedSitesString = blockedSites.join(", ");
-        console.log("Blocked sites: " + blockedSitesString);
-        
-        // Store the current active tab ID
-        currentTabId = activeInfo.tabId;
+        let blockedSites = result.blockedSites || []; // Default to empty array if not set
 
-        // Get details of the active tab
+        // Log the current blocked sites
+        console.log("Blocked sites: " + blockedSites.join(", "));
+
+        currentTabId = activeInfo.tabId; // Store the current active tab ID
+        
+        // Check if blockedSites is an array
+        if (!Array.isArray(blockedSites)) {
+            blockedSites = []; // Default to empty array if it's not
+        }
+
+        // Fetch the current tab and update tab time with blocked sites
         chrome.tabs.get(currentTabId, (tab) => {
-            // Update the tab time with the current URL and blocked sites
-            updateTabTime(activeInfo.tabId, tab.url, blockedSites);
+            updateTabTime(currentTabId, tab.url, blockedSites);
         });
     });
-});;
-
-chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-    if (tabId === currentTabId && changeInfo.url) {
-        currentUrl = changeInfo.url; // Update currentUrl here
-        updateTabTime(tabId, changeInfo.url);
-    }
 });
 
-// Modify updateTabTime to accept blocked sites as a parameter
-function updateTabTime(tabId, newUrl, blockedSites) {
-    let currentUrl = newUrl || "https://www.google.com/";  // Default URL if none is provided
-    let url = new URL(currentUrl);
-    let hostname = url.hostname;
 
-    // Determine if the current site is blocked
-    let newSiteBlocked = blockedSites.includes(hostname);
+// After a tab is updated, ensure blockedSites is properly fetched
+chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+    chrome.storage.local.get(['blockedSites'], (result) => {
+        let blockedSites = result.blockedSites || [];
+
+        // Ensure blockedSites is an array before using it
+        if (!Array.isArray(blockedSites)) {
+            blockedSites = [];
+        }
+
+        if (tabId === currentTabId && changeInfo.url) {
+            updateTabTime(tabId, changeInfo.url, blockedSites);
+        }
+    });
+});
+
+
+function updateTabTime(tabId, newUrl) {
+    let currentUrl = newUrl || "https://www.google.com/"; // Default to a safe URL
+    let hostname = new URL(currentUrl).hostname;
+
+    // Get the current time for tracking purposes
     let currentTime = Date.now();
 
-    if (currentTabBlocked && !shutdownBlockedSites) {
-        // Update time spent on blocked sites if current tab is blocked
-        timeSpentOnBlockedSites += currentTime - currentTabTime;
-    }
+    // Use the isSiteBlocked function to determine if the current site is blocked
+    isSiteBlocked(hostname, (isBlocked) => {
+        if (currentTabBlocked && !shutdownBlockedSites) {
+            // If the current tab is blocked, update the time spent on blocked sites
+            timeSpentOnBlockedSites += currentTime - currentTabTime;
+        }
 
-    // Set the status of the current tab based on whether it's blocked
-    if (newSiteBlocked) {
-        currentTabTime = currentTime;
-        currentTabBlocked = true;
-    } else {
-        currentTabTime = -1;
-        currentTabBlocked = false;
-    }
+        currentTabBlocked = isBlocked;
 
-    if (shutdownBlockedSites || timeSpentOnBlockedSites > allowedBlockedTime) {
-        shutdownBlockedSites = true;
-        console.log("Shutdown block sites: ", shutdownBlockedSites);
-    }
+        if (isBlocked) {
+            // If the current site is blocked, update the current tab time
+            currentTabTime = currentTime;
+        } else {
+            currentTabTime = -1; // Reset the tab time if it's not blocked
+        }
 
-    console.log("Time spent on blocked sites: " + timeSpentOnBlockedSites);
+        // Check if shutdown should be enabled based on allowed time spent
+        if (shutdownBlockedSites || timeSpentOnBlockedSites > allowedBlockedTime) {
+            shutdownBlockedSites = true;
+        }
 
-    // Update local storage with the current shutdown state
-    chrome.storage.local.set({'shutdown': shutdownBlockedSites}, () => {
-        console.log("Shutdown is set in storage. : " + shutdownBlockedSites);
+        console.log("Time spent on blocked sites: " + timeSpentOnBlockedSites);
+
+        // Save the shutdown status in local storage
+        chrome.storage.local.set({ 'shutdown': shutdownBlockedSites }, () => {
+            console.log("Shutdown set in storage: " + shutdownBlockedSites);
+        });
     });
 }
 
 
 
-
 function isSiteBlocked(hostname, callback) {
+    console.log("IN THIS BITCH");
     getBlockedSites((blockedSites) => {
         callback(blockedSites.includes(hostname));
+        console.log("Blocked sites: ", blockedSites)
     });
-    console.log("IN THIS BITCH");
-    console.log("Blocked sites: ", blockedSites)
+
 }
