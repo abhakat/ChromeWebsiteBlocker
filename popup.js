@@ -102,11 +102,33 @@ function deleteSelectedSites() {
     });
 }
 
-// Attach event listeners on DOMContentLoaded
+// Function to initialize the state of the toggle switch from local storage
+function initializeBlockingSwitch() {
+    const blockingSwitch = document.getElementById("blockingSwitch");
+
+    // Get the current state of the blocking switch from local storage
+    chrome.storage.local.get(['forceBlock'], (result) => {
+        const forceBlock = result.forceBlock ?? false; // Default to true
+        blockingSwitch.checked = forceBlock; // Set the switch based on the stored value
+    });
+
+    // Update the state in local storage when the switch is toggled
+    blockingSwitch.addEventListener("change", (event) => {
+        chrome.storage.local.set({ 'forceBlock': event.target.checked }, () => {
+            console.log("Site blocking enabled:", event.target.checked);
+        });
+    });
+}
+
+// Event listeners for popup initialization
 document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("saveButton").addEventListener("click", saveInput);
-    document.getElementById("deleteButton").addEventListener("click", deleteSelectedSites); // Attach delete event listener
+    document.getElementById("deleteButton").addEventListener("click", deleteSelectedSites);
 
     renderBlockedSites(); // Render blocked sites when the popup is loaded
     updateShutdownStatus(); // Update shutdown status when the popup is loaded
+
+    initializeBlockingSwitch(); // Initialize the blocking switch
+    // alert("blocking switch initialized");
 });
+

@@ -279,15 +279,16 @@ function isSiteBlocked(hostname, callback) {
 }
 
 // Check storage for shutdown status and use the isSiteBlocked function to determine the response
-chrome.storage.local.get(['shutdown', 'blockedSites'], function(result) {
+chrome.storage.local.get(['shutdown', 'blockedSites', 'forceBlock'], function(result) {
   let shutdown = result.shutdown || defaultShutdown; // Use defaultShutdown if result.shutdown is undefined
   let blockedSites = result.blockedSites || defaultBlockedSites; 
+  let isForceBlocked = result.forceBlock;
   // Check if the current site is blocked and if shutdown is true
   isSiteBlocked(window.location.hostname, (blocked) => {
-    alert("Blocked sites: " + blockedSites.join(", "));
-    alert(window.location.hostname);
-    if ((blocked || blockedSites.includes(window.location.hostname)) && shutdown) {
-      alert("In here");
+    // alert("Blocked sites: " + blockedSites.join(", "));
+    // alert(window.location.hostname);
+    // alert(isForceBlocked);
+    if ((blocked || blockedSites.includes(window.location.hostname)) && (shutdown || isForceBlocked)) {
       // Change the page content to block it
       document.head.innerHTML = generateSTYLES();
       document.body.innerHTML = generateHTML("Site blocked: " + window.location.hostname);

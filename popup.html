@@ -1,31 +1,40 @@
-<!-- popup.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <title>Popup</title>
-  <link rel="stylesheet" href="popup.css"> <!-- Link to external CSS for styling -->
-  <script src="popup.js"></script> <!-- Include JavaScript functions from external file -->
+  <!-- Include external CSS files for styling -->
+  <link rel="stylesheet" href="base-styles.css"> 
+  <link rel="stylesheet" href="switch.css">
+
+  <!-- Include JavaScript files in the head -->
+  <script src="initialize.js"></script> <!-- For initialization logic -->
 </head>
 <body>
- <u><h1>Site Blocker</h1></u>
-   <!-- Switch to enable/disable site blocking -->
-   <label for="blockingSwitch">Enable Site Blocking:</label>
-   <input type="checkbox" id="blockingSwitch" /> <!-- The switch to control site blocking -->
-  <!-- Indicator for shutdown status -->
+  <u><h1>Site Blocker</h1></u>
+
+  <!-- Toggle switch for enabling/disabling site blocking -->
+  <label for="blockingSwitch">Force Site Blocking:</label>
+  <label class="switch">
+    <input type="checkbox" id="blockingSwitch" />
+    <span class="slider round"></span>
+  </label>
+
+  <!-- Other popup content -->
   <h2>Shutdown Status</h2>
-  <p id="shutdownStatus">Loading...</p> <!-- Indicator for shutdownBlockedSites -->
+  <p id="shutdownStatus">Loading...</p>
 
-  <!-- User input for adding a new blocked site -->
   <h2>Enter your input</h2>
-  <input type="text" id="inputBar" placeholder="Type something here..." />
-  <button id="saveButton">Save Input</button>
+  <input type="text" id="inputBar" placeholder="Type a site to block..." />
+  <button id="saveButton">Save</button>
 
-  <!-- Section for displaying blocked sites with checkboxes -->
   <h2>Blocked Sites</h2>
-  <ul id="blockedSitesList"></ul> <!-- The list that will be populated with blocked sites -->
+  <ul id="blockedSitesList"></ul>
 
-  <!-- Button to trigger deletion of selected sites -->
   <button id="deleteButton">Delete Selected Sites</button>
+
+  <!-- Include JavaScript files at the end of the body -->
+  <script src="popup.js"></script> <!-- Main logic for the popup -->
+  <script src="event-handlers.js"></script> <!-- Specific event handling -->
 </body>
 </html>

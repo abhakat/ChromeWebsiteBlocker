@@ -50,13 +50,13 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 }
 
 let timeSpentOnBlockedSites = 0;
-let allowedBlockedTime = 100;
+let allowedBlockedTime = 10000000;
 let currentTabTime = -1;
 let currentTabBlocked = false;
 let currentTabId;
 let currentUrl;
 
-let shutdownBlockedSites = true;
+let shutdownBlockedSites = false;
 
 // chrome.action.onClicked.addListener(() => {
 //     chrome.tabs.create({ url: "https://leetcode.com/" }); // External URL to open
@@ -155,6 +155,7 @@ function updateTabTime(tabId, newUrl) {
 
 
 
+
 function isSiteBlocked(hostname, callback) {
     console.log("IN THIS BITCH");
     getBlockedSites((blockedSites) => {
@@ -163,3 +164,5 @@ function isSiteBlocked(hostname, callback) {
     });
 
 }
+
+
